@@ -133,6 +133,31 @@ public IndexedList<Calificacion> getCalificaciones(Function<Calificacion, Boolea
 	return null;
 }
 
+@Override
+public boolean equals(Object obj){
+	if(this == obj) return true;
+	else if(obj instanceof ActaNotasImpl){
+		ActaNotasImpl other = (ActaNotasImpl) obj;
+		return
+		for(int i = 0; this.calificaciones.size() == other.calificaciones.size()
+			&& i < this.calificaciones.size(); i++){
+		this.calificaciones.get(i).equals(other.calificaciones.get(i));
+		}
+		&& this.asignatura().equals(other.asignatura())
+		&& this.anyo() == other.anyo()
+		&& this.esConvocatoriaExtraordinaria().equals(other.esConvocatoriaExtraordinaria())
+	} else return false;
+}
+
+@Override
+public String toString(){
+	return
+	"Acta: " + '\n' +
+	this.asignatura() + '\n' +
+	this.anyo() + '\n' +
+	this.esConvocatoriaExtraordinaria();
+}
+
 private int getPositionOfMatricula(String Matricula) {
 	int position = 0;
 Calificacion calificacionFirst = calificaciones.get(0);
