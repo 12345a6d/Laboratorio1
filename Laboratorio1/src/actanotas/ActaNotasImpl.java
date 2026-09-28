@@ -110,8 +110,15 @@ public double notaMedia() {
 
 @Override
 public IndexedList<Pair<String, Integer>> alumnosPorGrupo() {
-	
-	return null;
+	IndexedList<Pair<String,Integer>> resultado = new ArrayIndexedList<>();
+	Integer numCalificaciones = 0; 
+	for(int i = 0; i<calificaciones.size(); i++) {
+	Calificacion calificacionBucle = calificaciones.get(i);
+	Pair<String,Integer> parejaI = new Pair<>(calificacionBucle.grupo(),numCalificaciones);
+	numCalificaciones++;
+	resultado.add(i, parejaI);
+	}
+	return resultado;
 }
 
 @Override
