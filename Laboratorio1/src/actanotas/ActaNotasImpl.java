@@ -25,6 +25,7 @@ public ActaNotasImpl(String x_1, double x_2, int x_3, boolean x_4) {
 	this.minNotaAprobada = x_2;
 	this.anyo = x_3;
 	this.esConvocatoriaExtraordinaria = x_4;
+	this.calificaciones = new ArrayIndexedList<>();
 }
 @Override
 public String asignatura() {
@@ -53,25 +54,42 @@ public ActaNotas addCalificacion(String nombre, String matricula, String grupo, 
 	if (nombre == null || matricula == null || grupo == null || nota<0.00 || nota>10.00) {
 	throw new IllegalArgumentException("No hay nombre, o matrícula, o grupo, o las notas exceden los parámetros tradicionales");
 	}
-	for(int i = 0; i<calificaciones.size(); i++) {
-		if (calificaciones.get(i).matricula() == matricula) {
-			throw new IllegalStateException("Ya hay otra matrícula asociada a este usuario.");	
-	}
-	}
 	
-	calificaciones.add(calificaciones.size(), new Calificacion(nombre, matricula,grupo,nota));
+	Calificacion aIntroducir = new Calificacion(nombre, matricula, grupo, nota);
+	Comparator<Calificacion> cmp = (c1,c2) -> c1.matricula().compareTo(c2.matricula());
+	int pos = whereToAdd(cmp,calificaciones,aIntroducir);
+	
+	if(pos < calificaciones.size() && calificaciones.get(pos).matricula().equals(aIntroducir.matricula())) {
+		throw new IllegalStateException("Ya hay una matrícula asociada a este usuario.");
+	}
+		
+	calificaciones.add(pos, aIntroducir);
+	
 	return this;
 }
 
 @Override
-public Calificacion getCalificacion(String matricula) {
-	return calificaciones.get(this.getPositionOfMatricula(matricula));
+public Calificacion getCalificacion(String matricula) throws IllegalArgumentException {
+	if(matricula == null){
+		throw new IllegalArgumentException("La matrícula es nula, introduzca una matrícula válida.");
+	}
+	int pos = this.getPositionOfMatricula(matricula);
+	if(pos == -1) return null;
+	return calificaciones.get(pos);
 }
 
 @Override
-public ActaNotas updateCalificacion(Calificacion calificacion)  {
-	
-	return null;
+public ActaNotas updateCalificacion(Calificacion calificacion) throws IllegalArgumentException, IllegalStateException  {
+	if(calificacion == null){
+		throw new IllegalArgumentException("La calificación es nula, introduzca una calificación válida.");
+	}
+	int pos = this.getPositionOfMatricula(calificacion.matricula());
+	if(pos == -1){
+		throw new IllegalStateException("No existe una calificación con esta matrícula.");
+	}
+	deleteCalificacion(calificacion.matricula());
+	addCalificacion(calificacion.nombreAlumno(), calificacion.matricula(), calificacion.grupo(), calificacion.nota());
+	return this;
 }
 
 @Override
@@ -100,8 +118,15 @@ public double notaMedia() {
 
 @Override
 public IndexedList<Pair<String, Integer>> alumnosPorGrupo() {
-	
-	return null;
+	IndexedList<Pair<String,Integer>> resultado = new ArrayIndexedList<>();
+	Integer numCalificaciones = 0; 
+	for(int i = 0; i<calificaciones.size(); i++) {
+	Calificacion calificacionBucle = calificaciones.get(i);
+	Pair<String,Integer> parejaI = new Pair<>(calificacionBucle.grupo(),numCalificaciones);
+	numCalificaciones++;
+	resultado.add(i, parejaI);
+	}
+	return resultado;
 }
 
 @Override
@@ -133,29 +158,56 @@ public IndexedList<Calificacion> getCalificaciones(Function<Calificacion, Boolea
 	return null;
 }
 
-private int getPositionOfMatricula(String Matricula) {
-	int position = 0;
-Calificacion calificacionFirst = calificaciones.get(0);
-Calificacion calificacionLast = calificaciones.get(calificaciones.size()-1);
-while (calificacionFirst.matricula().compareTo(Matricula)<0) {
-	int medio = (calificaciones.size())/2;
-Calificacion CalificacionMedio	= calificaciones.get(medio);
-if(CalificacionMedio.matricula().equals(Matricula)) {
-	position = medio;
-}
-else if(calificacionLast.matricula().compareTo(Matricula)<0) {
-	calificacionFirst = calificaciones.get(medio+1);
-}
-else if (calificacionLast.matricula().compareTo(Matricula)>0){
-	calificacionLast = calificaciones.get(medio-1);
-}
-else {
-	position = -1;
+@Override
+public boolean equals(Object obj){
+	if(this == obj) return true;
+	else if(obj instanceof ActaNotasImpl) {
+		ActaNotasImpl other = (ActaNotasImpl) obj;
+
+		boolean aux = false;
+		int i = 0;
+		if(this.calificaciones.size() == other.calificaciones.size()){
+			while(i < this.calificaciones.size() && this.calificaciones.get(i).equals(other.calificaciones.get(i))){
+				i++;
+			}
+			if(i == this.calificaciones.size()){
+				aux = true;
+			}
+		}
+		return aux
+		&& this.asignatura().equals(other.asignatura())
+		&& this.anyo() == other.anyo()
+		&& this.esConvocatoriaExtraordinaria() == other.esConvocatoriaExtraordinaria()
+		&& this.minNotaAprobado() == other.minNotaAprobado();
+	} else return false;
 }
 
+@Override
+public String toString(){
+	return 
+	"Acta: " + '\n' +
+	this.asignatura() + '\n' + 
+	this.anyo() + '\n' +
+	this.esConvocatoriaExtraordinaria();
 }
-return position;
+
+private int getPositionOfMatricula(String matricula) {
+	if(calificaciones.size() == 0) {
+		return -1;
 	}
+	int low = 0;
+	int high = calificaciones.size() - 1;
+	while(low <= high) {
+		int mid = low + (high - low)/2;
+		Calificacion midpoint = calificaciones.get(mid);
+		if(midpoint.matricula().compareTo(matricula) == 0)
+			return mid;
+		if(midpoint.matricula().compareTo(matricula) < 0)
+			low = mid + 1;
+		else high = mid - 1;
+	}
+	return -1;
+}
 
 private int whereToAdd(Comparator <Calificacion> cmp, IndexedList<Calificacion> calificaciones, Calificacion Objetivo) {
  int inicio = 0;
