@@ -64,14 +64,24 @@ public ActaNotas addCalificacion(String nombre, String matricula, String grupo, 
 }
 
 @Override
-public Calificacion getCalificacion(String matricula) {
+public Calificacion getCalificacion(String matricula) throws IllegalArgumentException {
+	if(matricula == null){
+		throw new IllegalArgumentException("La matrícula es nula, introduzca una matrícula válida.");
 	return calificaciones.get(this.getPositionOfMatricula(matricula));
 }
 
 @Override
-public ActaNotas updateCalificacion(Calificacion calificacion)  {
-	
-	return null;
+public ActaNotas updateCalificacion(Calificacion calificacion) throws IllegalArgumentException, IllegalStateException  {
+	if(calificacion == null){
+		throw new IllegalArgumentException("La calificación es nula, introduzca una calificación válida.");
+	}
+	int pos = this.getPositionOfMatricula(calificacion.matricula());
+	if(pos == -1){
+		throw new IllegalStateException("No existe una calificación con esta matrícula.");
+	}
+	deleteCalificacion(calificacion.matricula());
+	addCalificacion(calificacion.nombre(), calificacion.matricula(), calificacion.grupo(), calificacion.nota);
+	return this;
 }
 
 @Override
@@ -136,17 +146,25 @@ public IndexedList<Calificacion> getCalificaciones(Function<Calificacion, Boolea
 @Override
 public boolean equals(Object obj){
 	if(this == obj) return true;
-	else if(obj instanceof ActaNotasImpl){
+	else if(obj instanceof ActaNotasImpl) {
 		ActaNotasImpl other = (ActaNotasImpl) obj;
-		return
-		for(int i = 0; this.calificaciones.size() == other.calificaciones.size()
-			&& i < this.calificaciones.size(); i++){
-		this.calificaciones.get(i).equals(other.calificaciones.get(i));
+
+		boolean aux = false;
+		int i = 0;
+		if(this.calificaciones.size() == other.calificaciones.size()){
+			while(i < this.calificaciones.size() && this.calificaciones.get(i).equals(other.calificaciones.get(i))){
+				i++;
+			}
+			if(i == this.calificaciones.size()){
+				aux = true;
+			}
 		}
+		return aux
 		&& this.asignatura().equals(other.asignatura())
 		&& this.anyo() == other.anyo()
-		&& this.esConvocatoriaExtraordinaria().equals(other.esConvocatoriaExtraordinaria())
-	} else return false;
+		&& this.esConvocatoriaExtraordinaria() == other.esConvocatoriaExtraordinaria()
+		&& this.minNotaAprobada() == other.minNotaAprobada();
+	}
 }
 
 @Override
