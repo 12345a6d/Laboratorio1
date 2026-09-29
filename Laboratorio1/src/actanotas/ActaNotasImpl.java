@@ -107,7 +107,10 @@ public ActaNotas deleteCalificacion(String matricula) throws IllegalArgumentExce
 }
 
 @Override
-public double notaMedia() {
+public double notaMedia() throws IllegalStateException {
+	if(calificaciones.isEmpty()) {
+		throw new IllegalStateException("La lista de calificaciones está vacía.");
+	}
 	double notaMedia = 0;
 	for (int i = 0; i<this.calificaciones.size();i++) {
 		notaMedia += calificaciones.get(i).nota();
@@ -118,44 +121,52 @@ public double notaMedia() {
 
 @Override
 public IndexedList<Pair<String, Integer>> alumnosPorGrupo() {
-	IndexedList<Pair<String,Integer>> resultado = new ArrayIndexedList<>();
-	Integer numCalificaciones = 0; 
-	for(int i = 0; i<calificaciones.size(); i++) {
-	Calificacion calificacionBucle = calificaciones.get(i);
-	Pair<String,Integer> parejaI = new Pair<>(calificacionBucle.grupo(),numCalificaciones);
-	numCalificaciones++;
-	resultado.add(i, parejaI);
-	}
-	return resultado;
+
+    IndexedList<String> grupos = new ArrayIndexedList<>();
+    IndexedList<Integer> contadores = new ArrayIndexedList<>();
+//Bucle para mirar la lista indexada de bucles
+    for (int i = 0; i < this.calificaciones.size(); i++) {
+        String grupo = this.calificaciones.get(i).grupo();
+
+        int posGrupo = -1;
+        for (int j = 0; j<grupos.size(); j++) {
+            if (grupos.get(j).equals(grupo)) {
+                posGrupo = j;
+            }
+        }
+
+        if (posGrupo==-1) {
+            grupos.add(grupos.size(), grupo);
+            
+            contadores.add(contadores.size(), 1);
+        } else {
+            contadores.set(posGrupo, contadores.get(posGrupo) + 1);
+        }
+    }
+    IndexedList<Pair<String,Integer>> resultado = new ArrayIndexedList<>();
+    for(int i = 0; i < grupos.size(); i++) {
+    	resultado.add(i, new Pair<>(grupos.get(i),contadores.get(i)));
+    }
+    return resultado;
 }
 
 @Override
 public IndexedList<Calificacion> getCalificaciones(Function<Calificacion, Boolean> filter,
-		Comparator<Calificacion> cmp) {
-		
-	if (filter == null) {
-	return this.calificaciones;
-	}
-	IndexedList<Calificacion> res = new ArrayIndexedList<>();
-	for(int i = 0; i<calificaciones.size(); i++) {
-		Calificacion calificacionBucle = this.calificaciones.get(i);
-		if(filter.apply(calificacionBucle)){
-			if(cmp == null) {
-				if(calificacionBucle.matricula().compareTo(res.get(i).matricula())<0){
-				res.add(i-1, calificacionBucle);
-				}
-				else {
-				res.add(i+1, calificacionBucle);
-				}
-			}
-		}	
-		else {
-			res.add(this.whereToAdd(cmp, res, calificacionBucle), calificacionBucle);
-		}
-		
-	}
-	
-	return null;
+        Comparator<Calificacion> cmp) {
+
+    Comparator<Calificacion> comparador = (cmp != null)
+            ? cmp
+            : (c1, c2) -> c1.matricula().compareTo(c2.matricula());
+
+    IndexedList<Calificacion> res = new ArrayIndexedList<>();
+    for (int i = 0; i < calificaciones.size(); i++) {
+        Calificacion calificacionBucle = calificaciones.get(i);
+        if (filter == null || filter.apply(calificacionBucle)) {
+            int pos = this.whereToAdd(comparador, res, calificacionBucle);
+            res.add(pos, calificacionBucle);
+        }
+    }
+    return res;
 }
 
 @Override
